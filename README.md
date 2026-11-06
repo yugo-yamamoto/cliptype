@@ -138,6 +138,8 @@ SVG はブラウザがそのまま描画し、透過部分はチェック柄で�
   - 初回ビルドは依存が多く約 10 分、rust-script のキャッシュ（`AppData\Local\rust-script`）は約 1.7 GB。2 回目以降はビルド済み exe（12 MB）を起動するだけ
   - リリースビルドでは HLSL シェーダーを Windows SDK の `fxc.exe` でコンパイルするので、Windows SDK が必須
   - `ImageFormat::Svg` で渡すと **赤と青が入れ替わる**（PNG などは RGBA→BGRA 変換しているが SVG だけ変換が抜けている）→ 自前で resvg を使い PNG にしてから渡す
+  - クリップボードの SVG は**末尾に NUL（`\0`）が付いていることがある**。pyvips やブラウザは無視するが、resvg は `unknown token` で読み込みに失敗する → 取り除いてから渡す
+  - `img()` を `size_full()` で置くだけだと、画像の大きさで枠が広がり下が切れる → 枠を `relative()`、`img` を `absolute()` にする
   - 一覧の行は `w_full()` を付けないと列が詰まる。長いリストは `uniform_list`（仮想スクロール）、行は等しい高さが前提なので長い行は 160 文字で折り返す
   - Rust 2024 では `gen` が予約語でフィールド名に使えない
   - 高 DPI は GPUI が自動で対応（Tkinter のような補正は不要）

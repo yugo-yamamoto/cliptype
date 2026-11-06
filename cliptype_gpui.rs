@@ -568,10 +568,15 @@ fn make_image(it: &Item) -> Result<(Arc<Image>, String), String> {
     match it.kind {
         Some(Kind::Raw(f)) => Ok((Arc::new(Image::from_bytes(f, d.clone())), format!("生データ ({})", f.mime_type()))),
         Some(Kind::Svg) => {
-            let src = match it.enc {
+            let mut src = match it.enc {
                 Some(Enc::Utf8) | None => d.clone(),
                 Some(e) => decode(e, d).into_bytes(),
             };
+            // クリップボードのデータは末尾に NUL が付くことがあり、resvg は
+            // 「unknown token」で失敗する（pyvips やブラウザは無視する）ので取り除く
+            while src.last() == Some(&0) {
+                src.pop();
+            }
             // GPUI 0.2.2 の ImageFormat::Svg は RGBA→BGRA 変換が抜けていて色が化けるので、
             // resvg で PNG にしてから渡す
             let (png, w, h) = render_svg(&src)?;
@@ -843,8 +848,9 @@ impl Viewer {
                     .flex_col()
                     .child(div().px_2().py_1().text_color(rgb(0x666666)).child(msg.clone()))
                     .child(
-                        div().flex_1().min_h_0().overflow_hidden().bg(rgb(0xf4f4f4)).child(
-                            img(image.clone()).size_full().object_fit(ObjectFit::ScaleDown),
+                        // img は絶対配置にして、画像の大きさで枠が広がらないようにする
+                        div().flex_1().min_h_0().relative().overflow_hidden().bg(rgb(0xf4f4f4)).child(
+                            img(image.clone()).absolute().top_0().left_0().size_full().object_fit(ObjectFit::ScaleDown),
                         ),
                     )
                     .into_any_element(),
